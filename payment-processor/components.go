@@ -65,7 +65,7 @@ func NewTransaction(user User, amount float64, status string) *Transaction {
 type Component interface {
 	String() string
 	Get() string
-	Tag() string
+	Load([]byte) (Component, error)
 }
 
 func (u *User) String() string {
@@ -76,8 +76,23 @@ func (u *User) Get() string {
 	return u.Id
 }
 
-func (u *User) Tag() string {
-	return "users"
+func (u *User) Load(b []byte) (*User, error) {
+
+	var db map[string]*User
+
+	err := json.Unmarshal(b, &db)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	user, ok := db[u.Id]
+
+	if !ok {
+		return nil, fmt.Errorf("User does not exist!")
+	}
+
+	return user, nil
 }
 
 func (t *Transaction) String() string {
@@ -88,12 +103,27 @@ func (t *Transaction) Get() string {
 	return t.Id
 }
 
-func (t *Transaction) Tag() string {
-	return "transactions"
+func (t *Transaction) Load(b []byte) (*Transaction, error) {
+
+	var db map[string]*Transaction
+
+	err := json.Unmarshal(b, &db)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	transaction, ok := db[t.Id]
+
+	if !ok {
+		return nil, fmt.Errorf("Transaction does not exist!")
+	}
+
+	return transaction, nil
 }
 
 func Save(c Component) error {
-	// json loading from Db
+	// saving updated data (json) to Db
 
 	db := make(map[string]interface{})
 
@@ -101,7 +131,7 @@ func Save(c Component) error {
 	defer u.Close()
 
 	entries, err := ioutil.ReadAll(u)
-	fmt.Println(entries)
+
 	if err != nil {
 		return fmt.Errorf("Could not open file: %s\n", err)
 	}
@@ -124,6 +154,9 @@ func Save(c Component) error {
 		return fmt.Errorf("Cannot marshal (serialize) data: %s", err)
 	}
 
+	err = u.Truncate(0)
+	_, err = u.Seek(0, 0)
+
 	_, err = u.Write([]byte(jsonData))
 
 	if err != nil {
@@ -135,32 +168,26 @@ func Save(c Component) error {
 	return nil
 }
 
-func Load(filename string) (map[string]Component, error) {
-	// json reading from db
+func Load(file File) ([]byte, error) {
+	// json reading from db as bytes (pair with component.Load() function to get data)
 
-	var db map[string]Component
-
-	u, _ := UserFile.Open()
+	u, _ := file.Open()
 	defer u.Close()
 
-	entries, err := ioutil.ReadAll(u)
+	data, err := ioutil.ReadAll(u)
 
 	if err != nil {
 		return nil, fmt.Errorf("Could not open file: %s\n", err)
 	}
 
-	if len(entries) != 0 {
-
-		err = json.Unmarshal(entries, &db)
-
-		if err != nil {
-			return nil, fmt.Errorf("Unable to load data %s\n", err)
-		}
-
+	if len(data) != 0 {
+		return data, nil
 	}
 
-	// return the data
-	return db, nil
+	err = u.Close()
+
+	// return error if file is empty
+	return nil, fmt.Errorf("Empty file: %s\n", err)
 }
 
 type File struct {
