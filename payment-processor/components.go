@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -26,23 +27,41 @@ type Transaction struct {
 	User             User      `json:"user"`
 	Amount           float64   `json:"amount,omitempty"`
 	Status           string    `json:"status"`
+	Invoice          string    `json:"invoice,omitempty"`
 	CreatedAt        time.Time `json:"time"`
+}
+
+type Card struct {
+	Id      string    `json:"id"`
+	User    *User     `json:"user"`
+	Issuer  string    `json:"issuer"`
+	Number  string    `json:"number"`
+	Expiry  time.Time `json:"expiry"`
+	CVV     string    `json:"cvv"`
+	Balance float64   `json:"balance,omitempty"`
+	Limit   float64   `json:"-"`
 }
 
 func init() {
 	UserFile, _ = NewFile("users", "json")
 	TransactionFile, _ = NewFile("transactions", "json")
+	CardFile, _ = NewFile("cards", "json")
 }
 
-func NewUser(username, firstname, lastname string) *User {
+func NewUser(id, username, firstname, lastname *string) *User {
 
 	u := &User{
-		Username:  username,
-		FirstName: firstname,
-		LastName:  lastname,
+		Username:  *username,
+		FirstName: *firstname,
+		LastName:  *lastname,
 	}
 
-	u.Id = NewUUID()
+	if id == nil {
+		u.Id = NewUUID()
+	} else {
+		u.Id = *id
+	}
+
 	u.CreatedAt = time.Now()
 
 	return u
@@ -60,6 +79,25 @@ func NewTransaction(user User, amount float64, status string) *Transaction {
 	t.CreatedAt = time.Now()
 
 	return t
+}
+
+func NewCard(user *User, issuer string, number string, expiry string, cvv string) *Card {
+
+	expiry_parsed, err := time.Parse("2006-01-02 03:04:05", expiry)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c := &Card{
+		User:   user,
+		Issuer: issuer,
+		Number: number,
+		Expiry: expiry_parsed,
+		CVV:    cvv,
+	}
+
+	return c
 }
 
 type Component interface {
@@ -103,7 +141,7 @@ func (t *Transaction) Get() string {
 	return t.Id
 }
 
-func (t *Transaction) Load(b []byte) (*Transaction, error) {
+func (t *Transaction) Load(b []byte) (Transaction, error) {
 
 	var db map[string]*Transaction
 
@@ -116,10 +154,63 @@ func (t *Transaction) Load(b []byte) (*Transaction, error) {
 	transaction, ok := db[t.Id]
 
 	if !ok {
+		return Transaction{}, fmt.Errorf("Transaction does not exist!")
+	}
+
+	return *transaction, nil
+}
+
+func (c *Card) String() string {
+	return fmt.Sprintf("%s (%s)", c.User, c.Issuer)
+}
+
+func (c Card) Get() string {
+	return c.Id
+}
+
+func (c *Card) Load(b []byte) (*Card, error) {
+
+	var db map[string]*Card
+
+	err := json.Unmarshal(b, &db)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	card, ok := db[c.Id]
+
+	if !ok {
 		return nil, fmt.Errorf("Transaction does not exist!")
 	}
 
-	return transaction, nil
+	return card, nil
+}
+
+func (c *Card) Charge(amount float64) error {
+
+	if !c.Expired() {
+		if c.Balance > amount && amount < c.Limit {
+			c.Balance -= amount
+			return nil
+		}
+
+		return errors.New("Insufficient funds!")
+	}
+
+	return errors.New("Card expired!")
+}
+
+func (c *Card) Credit(amount float64) error {
+	c.Balance += amount
+	return nil
+}
+
+func (c Card) Expired() bool {
+	if time.Now().UTC().After(c.Expiry) {
+		return true
+	}
+	return false
 }
 
 func Save(c Component) error {
