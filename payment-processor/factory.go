@@ -6,10 +6,6 @@ import (
 	"time"
 )
 
-const (
-	CREATE = "https://paypal/api/V1/payment/create"
-)
-
 func InitUser(id string) user {
 	return user{Id: id}
 }
