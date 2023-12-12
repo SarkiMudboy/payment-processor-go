@@ -10,30 +10,30 @@ import (
 	"time"
 )
 
-type User struct {
+type user struct {
 	Id                  string        `json:"id"`
 	Username            string        `json:"username"`
 	FirstName           string        `json:"first name"`
 	LastName            string        `json:"last name"`
 	FullName            string        `json:"fullname,omitempty"`
-	PendingTransactions []Transaction `json:"pending transactions,omitempty"`
+	PendingTransactions []transaction `json:"pending transactions,omitempty"`
 	TotalPaidAmount     float64       `json:"total paid amount,omitempty"`
 	CreatedAt           time.Time     `json:"time"`
 }
 
-type Transaction struct {
+type transaction struct {
 	Id               string    `json:"id"`
 	ConfirmationCode string    `json:"conf_code,omitempty"`
-	User             User      `json:"user"`
+	User             user      `json:"user"`
 	Amount           float64   `json:"amount,omitempty"`
 	Status           string    `json:"status"`
 	Invoice          string    `json:"invoice,omitempty"`
 	CreatedAt        time.Time `json:"time"`
 }
 
-type Card struct {
+type card struct {
 	Id      string    `json:"id"`
-	User    *User     `json:"user"`
+	User    user      `json:"user"`
 	Issuer  string    `json:"issuer"`
 	Number  string    `json:"number"`
 	Expiry  time.Time `json:"expiry"`
@@ -48,75 +48,22 @@ func init() {
 	CardFile, _ = NewFile("cards", "json")
 }
 
-func NewUser(id, username, firstname, lastname *string) *User {
-
-	u := &User{
-		Username:  *username,
-		FirstName: *firstname,
-		LastName:  *lastname,
-	}
-
-	if id == nil {
-		u.Id = NewUUID()
-	} else {
-		u.Id = *id
-	}
-
-	u.CreatedAt = time.Now()
-
-	return u
-}
-
-func NewTransaction(user User, amount float64, status string) *Transaction {
-
-	t := &Transaction{
-		User:   user,
-		Amount: amount,
-		Status: status,
-	}
-
-	t.Id = NewUUID()
-	t.CreatedAt = time.Now()
-
-	return t
-}
-
-func NewCard(user *User, issuer string, number string, expiry string, cvv string) *Card {
-
-	expiry_parsed, err := time.Parse("2006-01-02 03:04:05", expiry)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	c := &Card{
-		User:   user,
-		Issuer: issuer,
-		Number: number,
-		Expiry: expiry_parsed,
-		CVV:    cvv,
-	}
-
-	return c
-}
-
 type Component interface {
 	String() string
 	Get() string
-	Load([]byte) (Component, error)
 }
 
-func (u *User) String() string {
+func (u *user) String() string {
 	return fmt.Sprintf("%s (%s)", u.FullName, u.Id)
 }
 
-func (u *User) Get() string {
+func (u *user) Get() string {
 	return u.Id
 }
 
-func (u *User) Load(b []byte) (*User, error) {
+func (u *user) Load(b []byte) (user, error) {
 
-	var db map[string]*User
+	var db map[string]user
 
 	err := json.Unmarshal(b, &db)
 
@@ -127,23 +74,23 @@ func (u *User) Load(b []byte) (*User, error) {
 	user, ok := db[u.Id]
 
 	if !ok {
-		return nil, fmt.Errorf("User does not exist!")
+		return user, fmt.Errorf("User does not exist!")
 	}
 
 	return user, nil
 }
 
-func (t *Transaction) String() string {
+func (t *transaction) String() string {
 	return fmt.Sprintf("Transaction: %s (%f)", t.Id, t.Amount)
 }
 
-func (t *Transaction) Get() string {
+func (t *transaction) Get() string {
 	return t.Id
 }
 
-func (t *Transaction) Load(b []byte) (Transaction, error) {
+func (t *transaction) Load(b []byte) (transaction, error) {
 
-	var db map[string]*Transaction
+	var db map[string]transaction
 
 	err := json.Unmarshal(b, &db)
 
@@ -154,23 +101,23 @@ func (t *Transaction) Load(b []byte) (Transaction, error) {
 	transaction, ok := db[t.Id]
 
 	if !ok {
-		return Transaction{}, fmt.Errorf("Transaction does not exist!")
+		return transaction, fmt.Errorf("Transaction does not exist!")
 	}
 
-	return *transaction, nil
+	return transaction, nil
 }
 
-func (c *Card) String() string {
-	return fmt.Sprintf("%s (%s)", c.User, c.Issuer)
+func (c *card) String() string {
+	return fmt.Sprintf("%s (%s)", c.User.FullName, c.Issuer)
 }
 
-func (c Card) Get() string {
+func (c *card) Get() string {
 	return c.Id
 }
 
-func (c *Card) Load(b []byte) (*Card, error) {
+func (c *card) Load(b []byte) (card, error) {
 
-	var db map[string]*Card
+	var db map[string]card
 
 	err := json.Unmarshal(b, &db)
 
@@ -181,13 +128,13 @@ func (c *Card) Load(b []byte) (*Card, error) {
 	card, ok := db[c.Id]
 
 	if !ok {
-		return nil, fmt.Errorf("Transaction does not exist!")
+		return card, fmt.Errorf("Transaction does not exist!")
 	}
 
 	return card, nil
 }
 
-func (c *Card) Charge(amount float64) error {
+func (c *card) Charge(amount float64) error {
 
 	if !c.Expired() {
 		if c.Balance > amount && amount < c.Limit {
@@ -201,12 +148,12 @@ func (c *Card) Charge(amount float64) error {
 	return errors.New("Card expired!")
 }
 
-func (c *Card) Credit(amount float64) error {
+func (c *card) Credit(amount float64) error {
 	c.Balance += amount
 	return nil
 }
 
-func (c Card) Expired() bool {
+func (c *card) Expired() bool {
 	if time.Now().UTC().After(c.Expiry) {
 		return true
 	}
@@ -284,22 +231,6 @@ func Load(file File) ([]byte, error) {
 type File struct {
 	Name string
 	Type string
-}
-
-func NewFile(filename, filetype string) (File, error) {
-
-	f := File{
-		Name: filename,
-		Type: filetype,
-	}
-
-	_, err := os.OpenFile(filename+"."+filetype, os.O_RDWR|os.O_CREATE, 0755)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return f, nil
 }
 
 func (f *File) Open() (*os.File, error) {

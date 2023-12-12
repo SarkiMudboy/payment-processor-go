@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	_ "errors"
 	"fmt"
 	"log"
@@ -19,20 +20,20 @@ func processor() {
 }
 
 type CreditCardProcessor struct {
-	card  *Card
+	card
 	Label string
 }
 
-func (c *CreditCardProcessor) oneTimePayment(t *Transaction) {
+func (c *CreditCardProcessor) oneTimePayment(t *transaction) {
 
-	fmt.Printf("submitting transaction: %s to %s\n", t.Id, c.card.Issuer) // change to logs
+	fmt.Printf("submitting transaction: %s to %s\n", t.Id, c.Issuer) // change to logs
 	fmt.Println("Verifying transaction...")
 	fmt.Println("Transaction approved, processing payment...")
 
 	t.Status = "pending"
 	t.ConfirmationCode = NewUUID()
 
-	err := c.card.Charge(t.Amount)
+	err := c.Charge(t.Amount)
 
 	if err != nil {
 		t.Status = "failed"
@@ -46,17 +47,17 @@ func (c *CreditCardProcessor) oneTimePayment(t *Transaction) {
 
 }
 
-func (c *CreditCardProcessor) Subscription(s *Subscription, t *Transaction) {
+func (c *CreditCardProcessor) Subscription(s *subscription, t *transaction) {
 
 	if s.VerifyBilling() {
-		fmt.Printf("submitting transaction: %s to %s\n", t.Id, c.card.Issuer) // change to logs
+		fmt.Printf("submitting transaction: %s to %s\n", t.Id, c.Issuer) // change to logs
 		fmt.Println("Verifying transaction...")
 		fmt.Println("Transaction approved, processing payment...")
 
 		t.Status = "pending"
 		t.ConfirmationCode = NewUUID()
 
-		err := c.card.Charge(s.plan)
+		err := c.Charge(s.plan)
 
 		if err != nil {
 			t.Status = "failed"
@@ -74,7 +75,7 @@ func (c *CreditCardProcessor) Subscription(s *Subscription, t *Transaction) {
 
 }
 
-func (c *CreditCardProcessor) Refund(r *Transaction, t *Transaction) {
+func (c *CreditCardProcessor) Refund(r, t *transaction) {
 
 	entries, err := Load(TransactionFile)
 
@@ -82,22 +83,23 @@ func (c *CreditCardProcessor) Refund(r *Transaction, t *Transaction) {
 		log.Fatal(err)
 	}
 
-	r, err = r.Load(entries)
+	_, err = r.Load(entries)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Could not find transaction:", err)
 	} else {
-		fmt.Printf("submitting refund request for %s (%s) to %s\n", r.Id, t.Id, c.card.Issuer) // change to logs
+		fmt.Printf("submitting refund request for %s (%s) to %s\n", r.Id, t.Id, c.Issuer) // change to logs
 		fmt.Println("Verifying transaction...")
 		fmt.Println("Transaction approved, processing payment...")
 
 		t.Status = "pending"
 		t.ConfirmationCode = NewUUID()
 
-		err = c.card.Credit(r.Amount)
+		err = c.Credit(r.Amount)
 
 		if err != nil {
 			log.Fatal(err) // handle this better
+			t.Status = "failed"
 		} else {
 			fmt.Printf("(Success) Transaction complete, your confirmation code is %s\n", t.ConfirmationCode)
 			fmt.Printf("Refund request successful you have been credited %f\n", r.Amount)
@@ -107,15 +109,138 @@ func (c *CreditCardProcessor) Refund(r *Transaction, t *Transaction) {
 
 			err = Save(r)
 		}
+
+		c.Invoice(t)
 	}
 
 }
 
-func (c *CreditCardProcessor) Invoice(t *Transaction) {
+func (c *CreditCardProcessor) Invoice(t *transaction) {
 	issueInvoice(t, c.Label)
 }
 
-func issueInvoice(t *Transaction, p string) {
+type account struct {
+	User    user    `json:"user"`
+	Holder  string  `json:"holder"`
+	Number  string  `json:"number"`
+	Balance float64 `json:"balance"`
+	Bank    string  `json:"bank"`
+}
+
+func (a *account) Debit(amount float64) error {
+	if a.Balance > amount {
+		a.Balance -= amount
+
+		return nil
+	}
+
+	return errors.New("insufficient funds!")
+}
+
+func (a *account) Credit(amount float64) error {
+	a.Balance += amount
+
+	return nil
+}
+
+type BankAccountProcessor struct {
+	account
+	Label string
+}
+
+func (b *BankAccountProcessor) oneTimePayment(t *transaction) {
+
+	fmt.Printf("submitting transaction: %s to %s\n", t.Id, b.Bank) // change to logs
+	fmt.Println("Verifying transaction...")
+	fmt.Println("Transaction approved, processing payment...")
+
+	t.Status = "pending"
+	t.ConfirmationCode = NewUUID()
+
+	err := b.Debit(t.Amount)
+
+	if err != nil {
+		t.Status = "failed"
+		log.Fatal("(Error) Could not process payment: ", err)
+	} else {
+		fmt.Printf("(Success) Transaction complete, your confirmation code is %s\n", t.ConfirmationCode)
+		t.Status = "paid"
+	}
+
+	b.Invoice(t)
+}
+
+func (b *BankAccountProcessor) Subscription(t *transaction, s *subscription) {
+
+	if s.VerifyBilling() {
+		fmt.Printf("submitting transaction: %s to %s\n", t.Id, b.Bank) // change to logs
+		fmt.Println("Verifying transaction...")
+		fmt.Println("Transaction approved, processing payment...")
+
+		t.Status = "pending"
+		t.ConfirmationCode = NewUUID()
+
+		err := b.Debit(s.plan)
+
+		if err != nil {
+			t.Status = "failed"
+			log.Fatal("(Error) Could not process payment: ", err)
+		} else {
+			fmt.Printf("(Success) Transaction complete, your confirmation code is %s\n", t.ConfirmationCode)
+			fmt.Printf("You have renewed your %s subscription plan till %s\n", s.name, s.due)
+			t.Status = "paid"
+		}
+	} else {
+		fmt.Println("(Fail) Transaction failed")
+	}
+
+	b.Invoice(t)
+}
+
+func (b *BankAccountProcessor) Refund(r, t *transaction) {
+
+	entries, err := Load(TransactionFile)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = r.Load(entries)
+
+	if err != nil {
+		log.Fatal("Could not find transaction:", err)
+	} else {
+		fmt.Printf("submitting refund request for %s (%s) to %s\n", r.Id, t.Id, b.Bank) // change to logs
+		fmt.Println("Verifying transaction...")
+		fmt.Println("Transaction approved, processing payment...")
+
+		t.Status = "pending"
+		t.ConfirmationCode = NewUUID()
+
+		err := b.Credit(r.Amount)
+
+		if err != nil {
+			log.Fatal(err) // handle this better
+			t.Status = "failed"
+		} else {
+			fmt.Printf("(Success) Transaction complete, your confirmation code is %s\n", t.ConfirmationCode)
+			fmt.Printf("Refund request successful you have been credited %f\n", r.Amount)
+
+			t.Status = "paid"
+			r.Status = "cancelled"
+
+			err = Save(r)
+		}
+
+		b.Invoice(t)
+	}
+}
+
+func (b *BankAccountProcessor) Invoice(t *transaction) {
+	issueInvoice(t, b.Label)
+}
+
+func issueInvoice(t *transaction, p string) {
 
 	date := time.Now().Format(time.RFC3339)
 

@@ -1,9 +1,13 @@
 package main
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
-type Subscription struct {
-	user   *User
+type subscription struct {
+	id     string
+	user   user
 	name   string
 	period string
 	due    time.Time // in UTC
@@ -12,7 +16,7 @@ type Subscription struct {
 	billed float64
 }
 
-func (s *Subscription) VerifyBilling() bool {
+func (s *subscription) VerifyBilling() bool {
 
 	now := time.Now().UTC()
 
@@ -23,12 +27,38 @@ func (s *Subscription) VerifyBilling() bool {
 	return false
 }
 
-func (s *Subscription) Biil() bool {
+func (s *subscription) Biil() bool {
 
-	now := time.Now().UTC()
 	s.billed += s.plan
-	s.due = now.Add(Period[s.period])
+	err := s.SetBilling()
+
+	if err != nil {
+		return false
+	}
 
 	return true
 
+}
+
+func (s *subscription) SetBilling() error {
+	// sets the next billing date for the subscription
+
+	now := time.Now().UTC()
+
+	switch s.period {
+	case "week":
+		s.due = now.Add(week)
+	case "month":
+		s.due = now.Add(month)
+	case "year":
+		s.due = now.Add(year)
+	default:
+		return fmt.Errorf("%s is not a valid billing period", s.period)
+	}
+
+	return nil
+}
+
+type paypalSubscription struct {
+	subscription
 }
