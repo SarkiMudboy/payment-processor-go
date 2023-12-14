@@ -102,5 +102,6 @@ func NewPaypalSub(sub subscription) paypalSubscription {
 		subscription: sub,
 	}
 
+	// some stuff to do here: ...
 	return p
 }

@@ -240,6 +240,15 @@ func (b *BankAccountProcessor) Invoice(t *transaction) {
 	issueInvoice(t, b.Label)
 }
 
+type PayPalProcessor struct {
+	client paypalClient
+	Label  string
+}
+
+func (p *paypalClient) Pay(t *transaction) {
+
+}
+
 func issueInvoice(t *transaction, p string) {
 
 	date := time.Now().Format(time.RFC3339)

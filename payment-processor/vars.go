@@ -19,8 +19,20 @@ const (
 // paypal
 
 const (
-	createPlan = "http://paypal/api/v1/payment/subscription/create"
-	create     = "https://paypal/api/v1/payment/create"
-	approve    = "https://paypal/api/v1/payment/approve"
-	execute    = "https://paypal/api/v1/payment/execute"
+	// product
+	createProduct = "https://api-m.sandbox.paypal.com/v1/catalogs/products"
+
+	// subs
+	createPlan = "https://api-m.sandbox.paypal.com/v1/billing/plans"
+	getPlan    = "https://api-m.sandbox.paypal.com/v1/billing/plans/"
+	CreateSub  = "https://api-m.sandbox.paypal.com/v1/billing/subscriptions"
+	GetSub     = "https://api-m.sandbox.paypal.com/v1/billing/subscriptions/"
+
+	// auth
+	getToken = ""
+
+	// payments
+	create  = "https://paypal/api/v1/payment/create"
+	approve = "https://paypal/api/v1/payment/approve"
+	execute = "https://paypal/api/v1/payment/execute"
 )

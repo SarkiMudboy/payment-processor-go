@@ -58,7 +58,3 @@ func (s *subscription) SetBilling() error {
 
 	return nil
 }
-
-type paypalSubscription struct {
-	subscription
-}
