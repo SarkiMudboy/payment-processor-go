@@ -16,6 +16,8 @@ const (
 	year  = 8064 * time.Hour
 )
 
+const sellerID = "identity_seller@paypal.com"
+
 // paypal
 
 const (
@@ -35,4 +37,10 @@ const (
 	createOrder    = "https://api-m.sandbox.paypal.com/v2/checkout/orders"
 	confirmOrder   = `https://api-m.sandbox.paypal.com/v2/checkout/orders/%s/confirm-payment-source`
 	authorizeOrder = `https://api-m.sandbox.paypal.com/v2/checkout/orders/%s/authorize`
+
+	// invoice
+	createInvoice = "https://api-m.sandbox.paypal.com/v2/invoicing/invoices"
+	sendInvoice   = `https://api-m.paypal.com/v2/invoicing/invoices/%s/send`
+
+	refund = `https://api-m.sandbox.paypal.com/v2/payments/captures/%s/refund`
 )

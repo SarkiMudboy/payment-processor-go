@@ -314,6 +314,53 @@ func (p *PayPalProcessor) Pay(t *paypalTransaction) error {
 	return nil
 }
 
-func (p *PayPalProcessor) Invoice(t *paypalTransaction) {
+func (p PayPalProcessor) Invoice(t *paypalTransaction) {
 
+	transaction_data := make(map[string]interface{}, 3)
+	ToMap(t, transaction_data)
+	t.genrateInvoice(transaction_data)
+
+}
+
+// paypal refund
+
+func (p PayPalProcessor) Refund(r, t *paypalTransaction) {
+
+	entries, err := Load(TransactionFile)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = r.Load(entries)
+
+	if err != nil {
+		log.Fatal("Could not find transaction:", err)
+	} else {
+		fmt.Printf("submitting refund request for %s (%s) to paypal\n", r.Id, t.Id) // change to logs
+		fmt.Println("Verifying transaction...")
+		fmt.Println("Transaction approved, processing payment...")
+
+		t.Status = "pending"
+		t.ConfirmationCode = NewUUID()
+
+		refundData := []string{sellerID, p.client.creds[0]}
+
+		err := t.requestRefund(p.client, refundData)
+
+		if err != nil {
+			log.Fatal(err) // handle this better
+			t.Status = "failed"
+		} else {
+			fmt.Printf("(Success) Transaction complete, your confirmation code is %s\n", t.ConfirmationCode)
+			fmt.Printf("Refund request successful you have been credited %f\n", r.Amount)
+
+			t.Status = "paid"
+			r.Status = "cancelled"
+
+			// err = Save(r)
+		}
+
+		p.Invoice(t)
+	}
 }

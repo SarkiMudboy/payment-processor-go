@@ -9,8 +9,9 @@ import (
 
 type paypalTransaction struct {
 	transaction
-	order  string
-	client paypalClient
+	order     string
+	client    paypalClient
+	captureID string
 }
 
 func (p *paypalTransaction) createOrder(data map[string]interface{}) {
@@ -100,13 +101,36 @@ func (p *paypalTransaction) genrateInvoice(data map[string]interface{}) {
 	}
 
 	invoice_id, ok := invoice["id"].(string)
-
 	if !ok {
 		log.Fatal("Invalid data")
 	}
 
 	p.Invoice = invoice_id
 
+	// send
+	endpoint := fmt.Sprintf(sendInvoice, p.Invoice)
+	response = Request(endpoint, "POST", b, p.client.Headers())
+
+	if response["status"] != 200 {
+		log.Fatal("Error sending invoice")
+	}
+
+}
+
+func (p paypalTransaction) requestRefund(c paypalClient, refundData []string) error {
+	buildHeader := c.getAssertionValue(refundData...)
+
+	headers := p.client.Headers()
+	headers["PayPal-Auth-Assertion"] = buildHeader
+
+	endpoint := fmt.Sprintf(refund, p.captureID)
+	response := Request(endpoint, "POST", []byte{}, headers)
+
+	if response["status"] != 200 {
+		return fmt.Errorf("Error requesting refund")
+	}
+
+	return nil
 }
 
 type paypalSubscription struct {
@@ -118,9 +142,18 @@ type paypalSubscription struct {
 }
 
 type paypalClient struct {
-	user  user
-	token string
-	creds []string
+	user          user
+	token         string
+	creds         []string
+	authAssertion string
+}
+
+func (p *paypalClient) getAssertionValue(data ...string) string {
+	client, seller := data[0], data[1]
+
+	val := fmt.Sprintf("%s/%s", client, seller)
+	return val
+
 }
 
 func (p paypalClient) Headers() map[string]string {
