@@ -2,10 +2,8 @@ package main
 
 import (
 	"errors"
-	_ "errors"
 	"fmt"
 	"log"
-	"time"
 )
 
 type Processor interface {
@@ -240,33 +238,82 @@ func (b *BankAccountProcessor) Invoice(t *transaction) {
 	issueInvoice(t, b.Label)
 }
 
+// PayPal
+
 type PayPalProcessor struct {
 	client paypalClient
 	Label  string
 }
 
-func (p *paypalClient) Pay(t *transaction) {
+func (p *PayPalProcessor) oneTimePayment(t *paypalTransaction) {
+
+	err := p.Pay(t)
+
+	if err != nil {
+		t.Status = "failed"
+		fmt.Printf("Transaction failed, contact paypal support. Transaction ID: %s\n", t.Id)
+	}
+
+	t.ConfirmationCode = NewUUID()
+	fmt.Printf("(Success) Transaction complete, your confirmation code is %s\n", t.ConfirmationCode)
 
 }
 
-func issueInvoice(t *transaction, p string) {
+func (p *PayPalProcessor) subscription(s paypalSubscription, t *paypalTransaction) {
 
-	date := time.Now().Format(time.RFC3339)
+	if s.VerifyBilling(p.client) {
+		fmt.Printf("submitting transaction: %s to paypal \n", t.Id) // change to logs
 
-	i := `
-	-----------(%s)---------------
-	Name: %s
-	Transaction: %s
-	Invoice Number: %s
-	------------------------------
-	Amount: %f
-	Tax: %0.00
-	Total: %f
-	Date: %s
-	------------------------------
-	Transaction status: %s
-	Confirmation code: %s
-	`
-	fmt.Printf(i, p, t.User.FullName, t.Id, NewUUID(), t.Amount, t.Amount,
-		date, t.Status, t.ConfirmationCode)
+		t.Status = "pending"
+		t.ConfirmationCode = NewUUID()
+
+		err := p.Pay(t)
+
+		if err != nil {
+			t.Status = "failed"
+			log.Fatal("(Error) Could not process payment: ", err)
+		} else {
+			fmt.Printf("(Success) Transaction complete, your confirmation code is %s\n", t.ConfirmationCode)
+			fmt.Printf("You have renewed your %s subscription plan till %s\n", s.name, s.due)
+			t.Status = "paid"
+		}
+	} else {
+		fmt.Println("(Fail) Transaction failed")
+	}
+
+	p.Invoice(t)
+}
+
+func (p *PayPalProcessor) Pay(t *paypalTransaction) error {
+
+	data := make(map[string]interface{}, 3)
+	data = ToMap(t, data)
+
+	fmt.Println("Creating order...")
+
+	// create the order
+	t.createOrder(data)
+
+	fmt.Println("Order created, confirming...")
+	t.Status = "pending"
+
+	// confirm the order
+	confirmed := t.confirmOrder(data)
+	if !confirmed {
+		return fmt.Errorf("Cannot confirm paypal order")
+	}
+
+	fmt.Println("Confirmed, Authorizing payment....")
+
+	// authorize the order
+	authorized := t.authorizeOrder()
+	if !authorized {
+		return fmt.Errorf("from paypal: Unauthorized!")
+	}
+	t.Status = "paid"
+	return nil
+}
+
+func (p *PayPalProcessor) Invoice(t *paypalTransaction) {
+
 }

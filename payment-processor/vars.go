@@ -29,10 +29,10 @@ const (
 	GetSub     = "https://api-m.sandbox.paypal.com/v1/billing/subscriptions/"
 
 	// auth
-	getToken = ""
+	getToken = "https://api-m.sandbox.paypal.com/v1/oauth2/token"
 
 	// payments
-	create  = "https://paypal/api/v1/payment/create"
-	approve = "https://paypal/api/v1/payment/approve"
-	execute = "https://paypal/api/v1/payment/execute"
+	createOrder    = "https://api-m.sandbox.paypal.com/v2/checkout/orders"
+	confirmOrder   = `https://api-m.sandbox.paypal.com/v2/checkout/orders/%s/confirm-payment-source`
+	authorizeOrder = `https://api-m.sandbox.paypal.com/v2/checkout/orders/%s/authorize`
 )
