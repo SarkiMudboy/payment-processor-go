@@ -27,8 +27,13 @@ func issueInvoice(t *transaction, p string) {
 	Transaction status: %s
 	Confirmation code: %s
 	`
-	fmt.Printf(i, p, t.User.FullName, t.Id, NewUUID(), t.Amount, t.Amount,
+	i = fmt.Sprintf(i, p, t.User.FullName, t.Id, NewUUID(), t.Amount, t.Amount,
 		date, t.Status, t.ConfirmationCode)
+
+	fmt.Println(i)
+
+	t.Invoice = i
+
 }
 
 func NewUUID() string {

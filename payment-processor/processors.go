@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 )
@@ -11,10 +10,6 @@ type Processor interface {
 	subscriptionPayment()
 	refund()
 	invoice()
-}
-
-func processor() {
-	fmt.Println("payment")
 }
 
 type CreditCardProcessor struct {
@@ -66,7 +61,7 @@ func (c *CreditCardProcessor) Subscription(s *subscription, t *transaction) {
 			t.Status = "paid"
 		}
 	} else {
-		fmt.Println("(Fail) Transaction failed")
+		log.Println(failedTransactionError)
 	}
 
 	c.Invoice(t)
@@ -96,7 +91,7 @@ func (c *CreditCardProcessor) Refund(r, t *transaction) {
 		err = c.Credit(r.Amount)
 
 		if err != nil {
-			log.Fatal(err) // handle this better
+			log.Println(failedTransactionError, err)
 			t.Status = "failed"
 		} else {
 			fmt.Printf("(Success) Transaction complete, your confirmation code is %s\n", t.ConfirmationCode)
@@ -117,29 +112,7 @@ func (c *CreditCardProcessor) Invoice(t *transaction) {
 	issueInvoice(t, c.Label)
 }
 
-type account struct {
-	User    user    `json:"user"`
-	Holder  string  `json:"holder"`
-	Number  string  `json:"number"`
-	Balance float64 `json:"balance"`
-	Bank    string  `json:"bank"`
-}
-
-func (a *account) Debit(amount float64) error {
-	if a.Balance > amount {
-		a.Balance -= amount
-
-		return nil
-	}
-
-	return errors.New("insufficient funds!")
-}
-
-func (a *account) Credit(amount float64) error {
-	a.Balance += amount
-
-	return nil
-}
+// account
 
 type BankAccountProcessor struct {
 	account

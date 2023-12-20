@@ -2,9 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -29,17 +28,6 @@ type transaction struct {
 	Status           string    `json:"status"`
 	Invoice          string    `json:"invoice,omitempty"`
 	CreatedAt        time.Time `json:"time"`
-}
-
-type card struct {
-	Id      string    `json:"id"`
-	User    user      `json:"user"`
-	Issuer  string    `json:"issuer"`
-	Number  string    `json:"number"`
-	Expiry  time.Time `json:"expiry"`
-	CVV     string    `json:"cvv"`
-	Balance float64   `json:"balance,omitempty"`
-	Limit   float64   `json:"-"`
 }
 
 func init() {
@@ -107,59 +95,6 @@ func (t *transaction) Load(b []byte) (transaction, error) {
 	return transaction, nil
 }
 
-func (c *card) String() string {
-	return fmt.Sprintf("%s (%s)", c.User.FullName, c.Issuer)
-}
-
-func (c *card) Get() string {
-	return c.Id
-}
-
-func (c *card) Load(b []byte) (card, error) {
-
-	var db map[string]card
-
-	err := json.Unmarshal(b, &db)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	card, ok := db[c.Id]
-
-	if !ok {
-		return card, fmt.Errorf("Transaction does not exist!")
-	}
-
-	return card, nil
-}
-
-func (c *card) Charge(amount float64) error {
-
-	if !c.Expired() {
-		if c.Balance > amount && amount < c.Limit {
-			c.Balance -= amount
-			return nil
-		}
-
-		return errors.New("Insufficient funds!")
-	}
-
-	return errors.New("Card expired!")
-}
-
-func (c *card) Credit(amount float64) error {
-	c.Balance += amount
-	return nil
-}
-
-func (c *card) Expired() bool {
-	if time.Now().UTC().After(c.Expiry) {
-		return true
-	}
-	return false
-}
-
 func Save(c Component) error {
 	// saving updated data (json) to Db
 
@@ -168,7 +103,7 @@ func Save(c Component) error {
 	u, _ := UserFile.Open()
 	defer u.Close()
 
-	entries, err := ioutil.ReadAll(u)
+	entries, err := io.ReadAll(u)
 
 	if err != nil {
 		return fmt.Errorf("Could not open file: %s\n", err)
@@ -212,7 +147,7 @@ func Load(file File) ([]byte, error) {
 	u, _ := file.Open()
 	defer u.Close()
 
-	data, err := ioutil.ReadAll(u)
+	data, err := io.ReadAll(u)
 
 	if err != nil {
 		return nil, fmt.Errorf("Could not open file: %s\n", err)
@@ -226,6 +161,117 @@ func Load(file File) ([]byte, error) {
 
 	// return error if file is empty
 	return nil, fmt.Errorf("Empty file: %s\n", err)
+}
+
+type account struct {
+	Id      string  `json:"Id"`
+	User    user    `json:"user"`
+	Holder  string  `json:"holder"`
+	Number  string  `json:"number"`
+	Balance float64 `json:"balance"`
+	Bank    string  `json:"bank"`
+}
+
+func (a *account) String() string {
+	return fmt.Sprintf("%s (%s)", a.User.FullName, a.Number)
+}
+
+func (a *account) Get() string {
+	return a.Id
+}
+
+func (a *account) Load(b []byte) (account, error) {
+
+	var db map[string]account
+
+	err := json.Unmarshal(b, &db)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	account, ok := db[a.Id]
+
+	if !ok {
+		return account, fmt.Errorf("account does not exist!")
+	}
+
+	return account, nil
+}
+
+func (a *account) Debit(amount float64) error {
+	if a.Balance > amount {
+		a.Balance -= amount
+
+		return nil
+	}
+
+	return insufficientError
+}
+
+func (a *account) Credit(amount float64) error {
+	a.Balance += amount
+
+	return nil
+}
+
+func (a *account) transfer() {} //decide if to put in processor?
+
+type bankTransaction struct {
+	Id              string  `json:"id"`
+	Sender          user    `json:"sender"`
+	Reciepient      string  `json:"reciepient"` //user id string
+	Receipt         string  `json:"receipt"`
+	Amount          float64 `json:"amount"`
+	TransactionType string  `json:"type"`
+}
+
+func (b *bankTransaction) Get() string {
+	return b.Id
+}
+
+func (b *bankTransaction) String() string {
+	return fmt.Sprintf("%s (%f)", b.Id, b.Amount)
+}
+
+func (t *bankTransaction) Load(b []byte) (bankTransaction, error) {
+
+	var db map[string]bankTransaction
+
+	err := json.Unmarshal(b, &db)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	transaction, ok := db[t.Id]
+
+	if !ok {
+		return transaction, fmt.Errorf("transaction does not exist!")
+	}
+
+	return transaction, nil
+}
+
+func (t *bankTransaction) issueReceipt() {
+
+	date := time.Now().Format(time.RFC3339)
+
+	r := `
+	-----------(%s)---------------
+	Name: %s
+	Transaction: %s
+	Receipt Number: %s
+	------------------------------
+	Amount: %f
+	Date: %s
+	`
+	r = fmt.Sprintf(r, t.Sender.FullName, t.Id, t.Amount,
+		date)
+
+	fmt.Println(r)
+
+	t.Receipt = r
 }
 
 type File struct {

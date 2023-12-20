@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 )
@@ -25,19 +24,19 @@ func (p *paypalTransaction) createOrder(data map[string]interface{}) {
 	response := Request(createOrder, "POST", b, p.client.Headers())
 
 	if response["status"] != 201 {
-		log.Fatal("Error creating order")
+		log.Fatal(getResourceError)
 	}
 
 	order, ok := response["plan"].(map[string]interface{})
 
 	if !ok {
-		log.Fatal("Invalid data")
+		log.Fatal(invalidResource)
 	}
 
 	order_id, ok := order["id"].(string)
 
 	if !ok {
-		log.Fatal("Invalid data")
+		log.Fatal(invalidResource)
 	}
 
 	p.order = order_id
@@ -57,7 +56,7 @@ func (p *paypalTransaction) confirmOrder(data map[string]interface{}) bool {
 	response := Request(endpoint, "POST", b, p.client.Headers())
 
 	if response["status"] != 200 {
-		fmt.Println("Error fetching order")
+		log.Println(getResourceError)
 		return false
 	}
 
@@ -71,7 +70,7 @@ func (p *paypalTransaction) authorizeOrder() bool {
 	response := Request(endpoint, "POST", []byte{}, p.client.Headers())
 
 	if response["status"] != 200 {
-		fmt.Println("Error authorizing order")
+		log.Println(failedError)
 		return false
 	}
 
@@ -91,18 +90,18 @@ func (p *paypalTransaction) genrateInvoice(data map[string]interface{}) {
 	response := Request(createInvoice, "POST", b, p.client.Headers())
 
 	if response["status"] != 201 {
-		log.Fatal("Error creating order")
+		log.Fatal(createResourceError)
 	}
 
 	invoice, ok := response["invoice"].(map[string]interface{})
 
 	if !ok {
-		log.Fatal("Invalid data")
+		log.Fatal(invalidResource)
 	}
 
 	invoice_id, ok := invoice["id"].(string)
 	if !ok {
-		log.Fatal("Invalid data")
+		log.Fatal(invalidResource)
 	}
 
 	p.Invoice = invoice_id
@@ -112,7 +111,7 @@ func (p *paypalTransaction) genrateInvoice(data map[string]interface{}) {
 	response = Request(endpoint, "POST", b, p.client.Headers())
 
 	if response["status"] != 200 {
-		log.Fatal("Error sending invoice")
+		log.Fatal(failedError)
 	}
 
 }
@@ -127,7 +126,7 @@ func (p paypalTransaction) requestRefund(c paypalClient, refundData []string) er
 	response := Request(endpoint, "POST", []byte{}, headers)
 
 	if response["status"] != 200 {
-		return fmt.Errorf("Error requesting refund")
+		return failedError
 	}
 
 	return nil
@@ -174,19 +173,19 @@ func (p *paypalClient) GetToken() error {
 	body, err := json.Marshal(data)
 
 	if err != nil {
-		return errors.New("Failed")
+		return invalidResource
 	}
 
 	response := Request(getToken, "POST", body, p.Headers())
 
 	if response["status"] != 200 {
-		return errors.New("Error getting token")
+		return getResourceError
 	}
 
 	token, ok := response["token"].(string)
 
 	if !ok {
-		return errors.New("invalid data")
+		return invalidResource
 	}
 
 	p.token = token
@@ -222,19 +221,19 @@ func (p *paypalSubscription) CreatePlan(d map[string]interface{}) {
 	response := Request(createPlan, "POST", b, p.client.Headers())
 
 	if response["status"] != 201 {
-		log.Fatal("Error creating plan")
+		log.Fatal(createResourceError)
 	}
 
 	plan, ok := response["plan"].(map[string]interface{})
 
 	if !ok {
-		log.Fatal("Invalid data")
+		log.Fatal(invalidResource)
 	}
 
 	plan_id, ok := plan["id"].(string)
 
 	if !ok {
-		log.Fatal("Invalid data")
+		log.Fatal(invalidResource)
 	}
 
 	p.planId = plan_id
@@ -265,19 +264,19 @@ func (p *paypalSubscription) CreateSub(data map[string]interface{}) {
 	response := Request(CreateSub, "POST", b, p.client.Headers())
 
 	if response["status"] != 201 {
-		log.Fatal("Error creating sub")
+		log.Fatal(createResourceError)
 	}
 
 	sub, ok := response["subscription"].(map[string]interface{})
 
 	if !ok {
-		log.Fatal("Invalid data")
+		log.Fatal(invalidResource)
 	}
 
 	id, ok := sub["id"].(string)
 
 	if !ok {
-		log.Fatal("Invalid data!")
+		log.Fatal(invalidResource)
 	}
 
 	p.subId = id

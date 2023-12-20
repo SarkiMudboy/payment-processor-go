@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
@@ -57,4 +58,41 @@ func (s *subscription) SetBilling() error {
 	}
 
 	return nil
+}
+
+type card struct {
+	Id      string    `json:"id"`
+	User    user      `json:"user"`
+	Issuer  string    `json:"issuer"`
+	Number  string    `json:"number"`
+	Expiry  time.Time `json:"expiry"`
+	CVV     string    `json:"cvv"`
+	Balance float64   `json:"balance,omitempty"`
+	Limit   float64   `json:"-"`
+}
+
+func (c *card) Charge(amount float64) error {
+
+	if !c.Expired() {
+		if c.Balance > amount && amount < c.Limit {
+			c.Balance -= amount
+			return nil
+		}
+
+		return insufficientError
+	}
+
+	return errors.New("Card expired!")
+}
+
+func (c *card) Credit(amount float64) error {
+	c.Balance += amount
+	return nil
+}
+
+func (c *card) Expired() bool {
+	if time.Now().UTC().After(c.Expiry) {
+		return true
+	}
+	return false
 }
