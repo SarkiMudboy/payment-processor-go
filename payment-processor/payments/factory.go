@@ -1,4 +1,4 @@
-package main
+package payments
 
 import (
 	"log"
@@ -73,7 +73,7 @@ func NewFile(filename, filetype string) (File, error) {
 		Type: filetype,
 	}
 
-	_, err := os.OpenFile(filename+"."+filetype, os.O_RDWR|os.O_CREATE, 0755)
+	_, err := os.OpenFile("db/"+filename+"."+filetype, os.O_RDWR|os.O_CREATE, 0755)
 
 	if err != nil {
 		log.Fatal(err)

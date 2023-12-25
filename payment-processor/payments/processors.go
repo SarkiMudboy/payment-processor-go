@@ -1,4 +1,4 @@
-package main
+package payments
 
 import (
 	"fmt"
@@ -100,7 +100,7 @@ func (c *CreditCardProcessor) Refund(r, t *transaction) {
 			t.Status = "paid"
 			r.Status = "cancelled"
 
-			err = Save(r)
+			err = Save(&TransactionFile, r)
 		}
 
 		c.Invoice(t)
@@ -200,7 +200,7 @@ func (b *BankAccountProcessor) Refund(r, t *transaction) {
 			t.Status = "paid"
 			r.Status = "cancelled"
 
-			err = Save(r)
+			err = Save(&TransactionFile, r)
 		}
 
 		b.Invoice(t)

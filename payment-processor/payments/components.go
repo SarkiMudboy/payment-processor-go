@@ -1,4 +1,4 @@
-package main
+package payments
 
 import (
 	"encoding/json"
@@ -33,7 +33,7 @@ type transaction struct {
 func init() {
 	UserFile, _ = NewFile("users", "json")
 	TransactionFile, _ = NewFile("transactions", "json")
-	CardFile, _ = NewFile("cards", "json")
+	AccountFile, _ = NewFile("accounts", "json")
 }
 
 type Component interface {
@@ -95,15 +95,15 @@ func (t *transaction) Load(b []byte) (transaction, error) {
 	return transaction, nil
 }
 
-func Save(c Component) error {
+func Save(file *File, c Component) error {
 	// saving updated data (json) to Db
 
 	db := make(map[string]interface{})
 
-	u, _ := UserFile.Open()
-	defer u.Close()
+	f, _ := file.Open()
+	defer f.Close()
 
-	entries, err := io.ReadAll(u)
+	entries, err := io.ReadAll(f)
 
 	if err != nil {
 		return fmt.Errorf("Could not open file: %s\n", err)
@@ -127,16 +127,16 @@ func Save(c Component) error {
 		return fmt.Errorf("Cannot marshal (serialize) data: %s", err)
 	}
 
-	err = u.Truncate(0)
-	_, err = u.Seek(0, 0)
+	err = f.Truncate(0)
+	_, err = f.Seek(0, 0)
 
-	_, err = u.Write([]byte(jsonData))
+	_, err = f.Write([]byte(jsonData))
 
 	if err != nil {
 		return fmt.Errorf("Cannot save data: %s", err)
 	}
 
-	_ = u.Close()
+	_ = f.Close()
 
 	return nil
 }

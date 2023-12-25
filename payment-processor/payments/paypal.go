@@ -1,4 +1,4 @@
-package main
+package payments
 
 import (
 	"encoding/json"

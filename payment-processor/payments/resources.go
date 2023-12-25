@@ -1,4 +1,4 @@
-package main
+package payments
 
 import "time"
 
@@ -6,7 +6,7 @@ import "time"
 
 var UserFile File
 var TransactionFile File
-var CardFile File
+var AccountFile File
 
 // billing period
 
