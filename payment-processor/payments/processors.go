@@ -6,10 +6,10 @@ import (
 )
 
 type Processor interface {
-	oneTimePayment()
-	subscriptionPayment()
-	refund()
-	invoice()
+	OneTimePayment()
+	Subscription()
+	Refund()
+	Invoice()
 }
 
 type CreditCardProcessor struct {
@@ -17,7 +17,7 @@ type CreditCardProcessor struct {
 	Label string
 }
 
-func (c *CreditCardProcessor) oneTimePayment(t *transaction) {
+func (c *CreditCardProcessor) OneTimePayment(t *transaction) {
 
 	fmt.Printf("submitting transaction: %s to %s\n", t.Id, c.Issuer) // change to logs
 	fmt.Println("Verifying transaction...")
@@ -119,7 +119,7 @@ type BankAccountProcessor struct {
 	Label string
 }
 
-func (b *BankAccountProcessor) oneTimePayment(t *transaction) {
+func (b *BankAccountProcessor) OneTimePayment(t *transaction) {
 
 	fmt.Printf("submitting transaction: %s to %s\n", t.Id, b.Bank) // change to logs
 	fmt.Println("Verifying transaction...")
@@ -218,7 +218,7 @@ type PayPalProcessor struct {
 	Label  string
 }
 
-func (p *PayPalProcessor) oneTimePayment(t *paypalTransaction) {
+func (p *PayPalProcessor) OneTimePayment(t *paypalTransaction) {
 
 	err := p.Pay(t)
 
@@ -232,7 +232,7 @@ func (p *PayPalProcessor) oneTimePayment(t *paypalTransaction) {
 
 }
 
-func (p *PayPalProcessor) subscription(s paypalSubscription, t *paypalTransaction) {
+func (p *PayPalProcessor) Subscription(s paypalSubscription, t *paypalTransaction) {
 
 	if s.VerifyBilling(p.client) {
 		fmt.Printf("submitting transaction: %s to paypal \n", t.Id) // change to logs
@@ -331,7 +331,7 @@ func (p PayPalProcessor) Refund(r, t *paypalTransaction) {
 			t.Status = "paid"
 			r.Status = "cancelled"
 
-			// err = Save(r)
+			err = Save(&TransactionFile, r)
 		}
 
 		p.Invoice(t)

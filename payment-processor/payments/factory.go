@@ -1,6 +1,7 @@
 package payments
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -19,7 +20,28 @@ func InitSubscription(id string) subscription {
 	return subscription{id: id}
 }
 
-func NewUser(id, username, firstname, lastname string) user {
+func NewCreditCardProcessor(creditCard card, label string) CreditCardProcessor {
+	return CreditCardProcessor{
+		card:  creditCard,
+		Label: label,
+	}
+}
+
+func NewBankAccountProcessor(a account, label string) BankAccountProcessor {
+	return BankAccountProcessor{
+		account: a,
+		Label:   label,
+	}
+}
+
+func NewPayPalProcessor(c paypalClient, label string) PayPalProcessor {
+	return PayPalProcessor{
+		client: c,
+		Label:  label,
+	}
+}
+
+func NewUser(username, firstname, lastname string) user {
 
 	u := user{
 		Username:  username,
@@ -28,6 +50,7 @@ func NewUser(id, username, firstname, lastname string) user {
 	}
 
 	u.Id = NewUUID()
+	u.FullName = u.FirstName + " " + u.LastName
 	u.CreatedAt = time.Now()
 
 	return u
@@ -73,10 +96,25 @@ func NewFile(filename, filetype string) (File, error) {
 		Type: filetype,
 	}
 
-	_, err := os.OpenFile("db/"+filename+"."+filetype, os.O_RDWR|os.O_CREATE, 0755)
+	filepath := filename + "." + filetype
 
-	if err != nil {
-		log.Fatal(err)
+	if _, err := os.Stat(filepath); os.IsNotExist(err) {
+		file, err := os.Create(filepath)
+		fmt.Println(file)
+
+		defer file.Close()
+
+		if err != nil {
+			return File{}, err
+		}
+
+	} else {
+		file, err := os.Open(filepath)
+		defer file.Close()
+
+		if err != nil {
+			return File{}, err
+		}
 	}
 
 	return f, nil

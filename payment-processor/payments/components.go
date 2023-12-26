@@ -41,11 +41,11 @@ type Component interface {
 	Get() string
 }
 
-func (u *user) String() string {
+func (u user) String() string {
 	return fmt.Sprintf("%s (%s)", u.FullName, u.Id)
 }
 
-func (u *user) Get() string {
+func (u user) Get() string {
 	return u.Id
 }
 
@@ -68,11 +68,11 @@ func (u *user) Load(b []byte) (user, error) {
 	return user, nil
 }
 
-func (t *transaction) String() string {
+func (t transaction) String() string {
 	return fmt.Sprintf("Transaction: %s (%f)", t.Id, t.Amount)
 }
 
-func (t *transaction) Get() string {
+func (t transaction) Get() string {
 	return t.Id
 }
 
@@ -172,11 +172,11 @@ type account struct {
 	Bank    string  `json:"bank"`
 }
 
-func (a *account) String() string {
+func (a account) String() string {
 	return fmt.Sprintf("%s (%s)", a.User.FullName, a.Number)
 }
 
-func (a *account) Get() string {
+func (a account) Get() string {
 	return a.Id
 }
 
@@ -226,11 +226,11 @@ type bankTransaction struct {
 	TransactionType string  `json:"type"`
 }
 
-func (b *bankTransaction) Get() string {
+func (b bankTransaction) Get() string {
 	return b.Id
 }
 
-func (b *bankTransaction) String() string {
+func (b bankTransaction) String() string {
 	return fmt.Sprintf("%s (%f)", b.Id, b.Amount)
 }
 

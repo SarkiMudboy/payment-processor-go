@@ -1,0 +1,17 @@
+{
+ "8ed9afe4-5617-4f71-ab54-4e69c72d9761": {
+  "id": "8ed9afe4-5617-4f71-ab54-4e69c72d9761",
+  "conf_code": "8f330c98-8eda-40a1-9d64-65bea8edbcf9",
+  "user": {
+   "id": "2e14072a-ba0e-4594-b393-ead3ea7a48da",
+   "username": "Yahya322",
+   "first name": "Usman",
+   "last name": "Yahya",
+   "time": "2023-12-26T08:57:28.7612214+01:00"
+  },
+  "amount": 344.9,
+  "status": "paid",
+  "invoice": "\n\t-----------(Chase)---------------\n\tName: Usman Yahya\n\tTransaction: 8ed9afe4-5617-4f71-ab54-4e69c72d9761\n\tInvoice Number: 5075cf94-20f1-407e-8b1d-81471dd667be\n\t------------------------------\n\tAmount: 344.900000\n\tTax: 0.00\n\tTotal: 344.900000\n\tDate: 2023-12-26T13:21:11+01:00\n\t------------------------------\n\tTransaction status: paid\n\tConfirmation code: 8f330c98-8eda-40a1-9d64-65bea8edbcf9\n\t",
+  "time": "2023-12-26T13:21:11.3189534+01:00"
+ }
+}

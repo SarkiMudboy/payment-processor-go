@@ -108,14 +108,14 @@ func issueInvoice(t *transaction, p string) {
 	Invoice Number: %s
 	------------------------------
 	Amount: %f
-	Tax: %0.00
+	Tax: 0.00
 	Total: %f
 	Date: %s
 	------------------------------
 	Transaction status: %s
 	Confirmation code: %s
 	`
-	i = fmt.Sprintf(i, p, t.User.FullName, t.Id, NewUUID(), t.Amount, t.Amount,
+	i = fmt.Sprintf(i, p, t.User.FirstName+" "+t.User.LastName, t.Id, NewUUID(), t.Amount, t.Amount,
 		date, t.Status, t.ConfirmationCode)
 
 	fmt.Println(i)
