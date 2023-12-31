@@ -97,7 +97,7 @@ func (c *card) Expired() bool {
 	return false
 }
 
-func issueInvoice(t *transaction, p string) {
+func issueInvoice(t *Transaction, p string) {
 
 	date := time.Now().Format(time.RFC3339)
 

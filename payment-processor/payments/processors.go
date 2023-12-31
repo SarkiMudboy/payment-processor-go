@@ -6,10 +6,10 @@ import (
 )
 
 type Processor interface {
-	OneTimePayment()
-	Subscription()
-	Refund()
-	Invoice()
+	OneTimePayment(*Transaction)
+	Subscription(*subscription, *Transaction)
+	Refund(*Transaction, *Transaction)
+	Invoice(*Transaction)
 }
 
 type CreditCardProcessor struct {
@@ -17,7 +17,7 @@ type CreditCardProcessor struct {
 	Label string
 }
 
-func (c *CreditCardProcessor) OneTimePayment(t *transaction) {
+func (c *CreditCardProcessor) OneTimePayment(t *Transaction) {
 
 	fmt.Printf("submitting transaction: %s to %s\n", t.Id, c.Issuer) // change to logs
 	fmt.Println("Verifying transaction...")
@@ -40,7 +40,7 @@ func (c *CreditCardProcessor) OneTimePayment(t *transaction) {
 
 }
 
-func (c *CreditCardProcessor) Subscription(s *subscription, t *transaction) {
+func (c *CreditCardProcessor) Subscription(s *subscription, t *Transaction) {
 
 	if s.VerifyBilling() {
 		fmt.Printf("submitting transaction: %s to %s\n", t.Id, c.Issuer) // change to logs
@@ -68,7 +68,7 @@ func (c *CreditCardProcessor) Subscription(s *subscription, t *transaction) {
 
 }
 
-func (c *CreditCardProcessor) Refund(r, t *transaction) {
+func (c *CreditCardProcessor) Refund(r, t *Transaction) {
 
 	entries, err := Load(TransactionFile)
 
@@ -108,7 +108,7 @@ func (c *CreditCardProcessor) Refund(r, t *transaction) {
 
 }
 
-func (c *CreditCardProcessor) Invoice(t *transaction) {
+func (c *CreditCardProcessor) Invoice(t *Transaction) {
 	issueInvoice(t, c.Label)
 }
 
@@ -119,7 +119,7 @@ type BankAccountProcessor struct {
 	Label string
 }
 
-func (b *BankAccountProcessor) OneTimePayment(t *transaction) {
+func (b *BankAccountProcessor) OneTimePayment(t *Transaction) {
 
 	fmt.Printf("submitting transaction: %s to %s\n", t.Id, b.Bank) // change to logs
 	fmt.Println("Verifying transaction...")
@@ -141,7 +141,7 @@ func (b *BankAccountProcessor) OneTimePayment(t *transaction) {
 	b.Invoice(t)
 }
 
-func (b *BankAccountProcessor) Subscription(t *transaction, s *subscription) {
+func (b *BankAccountProcessor) Subscription(s *subscription, t *Transaction) {
 
 	if s.VerifyBilling() {
 		fmt.Printf("submitting transaction: %s to %s\n", t.Id, b.Bank) // change to logs
@@ -168,7 +168,7 @@ func (b *BankAccountProcessor) Subscription(t *transaction, s *subscription) {
 	b.Invoice(t)
 }
 
-func (b *BankAccountProcessor) Refund(r, t *transaction) {
+func (b *BankAccountProcessor) Refund(r, t *Transaction) {
 
 	entries, err := Load(TransactionFile)
 
@@ -207,7 +207,7 @@ func (b *BankAccountProcessor) Refund(r, t *transaction) {
 	}
 }
 
-func (b *BankAccountProcessor) Invoice(t *transaction) {
+func (b *BankAccountProcessor) Invoice(t *Transaction) {
 	issueInvoice(t, b.Label)
 }
 

@@ -15,12 +15,12 @@ type user struct {
 	FirstName           string        `json:"first name"`
 	LastName            string        `json:"last name"`
 	FullName            string        `json:"fullname,omitempty"`
-	PendingTransactions []transaction `json:"pending transactions,omitempty"`
+	PendingTransactions []Transaction `json:"pending transactions,omitempty"`
 	TotalPaidAmount     float64       `json:"total paid amount,omitempty"`
 	CreatedAt           time.Time     `json:"time"`
 }
 
-type transaction struct {
+type Transaction struct {
 	Id               string    `json:"id"`
 	ConfirmationCode string    `json:"conf_code,omitempty"`
 	User             user      `json:"user"`
@@ -68,17 +68,17 @@ func (u *user) Load(b []byte) (user, error) {
 	return user, nil
 }
 
-func (t transaction) String() string {
+func (t Transaction) String() string {
 	return fmt.Sprintf("Transaction: %s (%f)", t.Id, t.Amount)
 }
 
-func (t transaction) Get() string {
+func (t Transaction) Get() string {
 	return t.Id
 }
 
-func (t *transaction) Load(b []byte) (transaction, error) {
+func (t *Transaction) Load(b []byte) (Transaction, error) {
 
-	var db map[string]transaction
+	var db map[string]Transaction
 
 	err := json.Unmarshal(b, &db)
 

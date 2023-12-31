@@ -24,5 +24,4 @@ func init() {
 	Info = log.New(os.Stdout, "INFO: ", logFlag)
 	Warning = log.New(os.Stdout, "WARNING: ", logFlag)
 	Error = log.New(io.MultiWriter(os.Stderr, file), "ERROR: ", logFlag)
-
 }

@@ -10,8 +10,8 @@ import (
 func InitUser(id string) user {
 	return user{Id: id}
 }
-func InitTransaction(id string) transaction {
-	return transaction{Id: id}
+func InitTransaction(id string) Transaction {
+	return Transaction{Id: id}
 }
 func InitCard(id string) card {
 	return card{Id: id}
@@ -20,22 +20,22 @@ func InitSubscription(id string) subscription {
 	return subscription{id: id}
 }
 
-func NewCreditCardProcessor(creditCard card, label string) CreditCardProcessor {
-	return CreditCardProcessor{
+func NewCreditCardProcessor(creditCard card, label string) *CreditCardProcessor {
+	return &CreditCardProcessor{
 		card:  creditCard,
 		Label: label,
 	}
 }
 
-func NewBankAccountProcessor(a account, label string) BankAccountProcessor {
-	return BankAccountProcessor{
+func NewBankAccountProcessor(a account, label string) *BankAccountProcessor {
+	return &BankAccountProcessor{
 		account: a,
 		Label:   label,
 	}
 }
 
-func NewPayPalProcessor(c paypalClient, label string) PayPalProcessor {
-	return PayPalProcessor{
+func NewPayPalProcessor(c paypalClient, label string) *PayPalProcessor {
+	return &PayPalProcessor{
 		client: c,
 		Label:  label,
 	}
@@ -56,9 +56,9 @@ func NewUser(username, firstname, lastname string) user {
 	return u
 }
 
-func NewTransaction(user user, amount float64, status string) transaction {
+func NewTransaction(user user, amount float64, status string) *Transaction {
 
-	t := transaction{
+	t := &Transaction{
 		User:   user,
 		Amount: amount,
 		Status: status,
@@ -68,6 +68,18 @@ func NewTransaction(user user, amount float64, status string) transaction {
 	t.CreatedAt = time.Now()
 
 	return t
+}
+
+func NewAccount(user user, holder string, number string, bank string) *account {
+	a := &account{
+		User:   user,
+		Holder: holder,
+		Number: number,
+		Bank:   bank,
+	}
+
+	a.Id = NewUUID()
+	return a
 }
 
 func NewCard(user user, issuer string, number string, expiry string, cvv string) card {

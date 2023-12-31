@@ -7,7 +7,7 @@ import (
 )
 
 type paypalTransaction struct {
-	transaction
+	Transaction
 	order     string
 	client    paypalClient
 	captureID string

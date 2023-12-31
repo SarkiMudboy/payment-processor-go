@@ -39,8 +39,11 @@ func main() {
 	label := "Chase"
 
 	processor := payments.NewCreditCardProcessor(card, label)
-	processor.OneTimePayment(&t)
+	processor.OneTimePayment(t)
 
 	err = payments.Save(&payments.TransactionFile, t)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 }
