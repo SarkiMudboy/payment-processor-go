@@ -98,6 +98,9 @@ func NewCard(user user, issuer string, number string, expiry string, cvv string)
 		CVV:    cvv,
 	}
 
+	c.Balance = 1000.00
+	c.Limit = 100000000.00
+
 	return c
 }
 

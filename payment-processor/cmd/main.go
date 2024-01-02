@@ -9,10 +9,10 @@ import (
 func intro() {
 
 	fmt.Println(`
-	 ________________
-	|				 |
-	|	GO-WALLET    |
-	|________________|
+		________________
+		|				 |
+		|	GO-WALLET    |
+		|________________|
 
 <WELCOME TO GO-WALLET>
 

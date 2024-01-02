@@ -18,6 +18,7 @@ type Request struct {
 	Transaction struct {
 		transaction string
 		refund      string
+		amount      float64
 	}
 	Processor string
 	Operation string
@@ -49,20 +50,16 @@ func (r Request) Build() Handler {
 
 		user, err = user.Load(entries)
 
-		// load transactions
-
-		transaction := payments.InitTransaction(r.Transaction.transaction)
-
-		entries, err = payments.Load(payments.TransactionFile)
-
 		if err != nil {
 			log.Fatal(err)
 		}
+		// load transactions
 
-		t, err = transaction.Load(entries)
+		t := payments.InitTransaction(r.Transaction.transaction)
+		t.Amount = r.Transaction.amount
+
 		card := payments.NewCard(user, data.card["issuer"], data.card["number"], data.card["expiry"], data.card["cvv"])
-		proc = payments.NewCreditCardProcessor(card, "Verve")
-		// t = payments.NewTransaction(user, transaction.Amount, transaction.Status) i think...
+		proc = payments.NewCreditCardProcessor(card, card.Issuer)
 
 	case "bank":
 		data := r.Data
@@ -78,17 +75,14 @@ func (r Request) Build() Handler {
 
 		user, err = user.Load(entries)
 
-		// load transactions
-
-		transaction := payments.InitTransaction(r.Transaction.transaction)
-
-		entries, err = payments.Load(payments.TransactionFile)
-
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		t, err = transaction.Load(entries)
+		// load transactions
+
+		t = payments.InitTransaction(r.Transaction.transaction)
+		t.Amount = r.Transaction.amount
 
 		account := payments.NewAccount(user, data.account["holder"], data.account["number"], data.account["bank"])
 		proc = payments.NewBankAccountProcessor(*account, account.Bank)

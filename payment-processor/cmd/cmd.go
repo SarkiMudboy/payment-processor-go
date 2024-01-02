@@ -17,7 +17,7 @@ import (
 var card = map[string]string{
 	"issuer": "Verve",
 	"number": "123-4567-8901-234-5678",
-	"expiry": "2025-08-15T14:30:45.0000001-05:00",
+	"expiry": "2025-08-15 03:04:05",
 	"cvv":    "987",
 }
 
@@ -40,7 +40,7 @@ func NewPayCommand() *PayCommand {
 		fs: flag.NewFlagSet("pay", flag.ContinueOnError),
 	}
 
-	pay.fs.StringVar(&pay.operation, "operation", "op", "represents the payment operation")
+	pay.fs.StringVar(&pay.operation, "op", "one-time", "represents the payment operation")
 	pay.fs.Float64Var(&pay.amount, "amount", 0.0, "transaction amount")
 
 	return pay
@@ -61,9 +61,11 @@ func (p *PayCommand) Init(args []string) error {
 }
 
 func (p *PayCommand) Run() error {
-	req := GetRequest(p)
 
+	process := Process{Runner: p, amount: p.amount}
+	req := GetRequest(process)
 	handler := req.Build()
+
 	return handler.Handle(req)
 }
 
@@ -76,6 +78,11 @@ type Runner interface {
 	Run() error
 	Name() string
 	Operation() string
+}
+
+type Process struct {
+	Runner
+	amount float64
 }
 
 func root(args []string) error {
@@ -99,12 +106,13 @@ func root(args []string) error {
 	return fmt.Errorf("Unknown Command: %s", subcommand)
 }
 
-func GetRequest(r Runner) Request {
-	if r.Name() == "pay" {
+func GetRequest(p Process) Request {
+	if p.Name() == "pay" {
 
 		var userID string
 		var proc int
 		var processor string
+
 		var data struct {
 			card         map[string]string
 			subscription map[string]string
@@ -136,25 +144,27 @@ func GetRequest(r Runner) Request {
 			}{account: account}
 		}
 
-		r := Request{
+		req := Request{
 			UserID: userID,
 			Data:   data,
 			Transaction: struct {
 				transaction string
 				refund      string
+				amount      float64
 			}{
 				transaction: payments.NewUUID(),
+				amount:      p.amount,
 			},
 			Processor: processor,
-			Operation: r.Operation(),
+			Operation: p.Operation(),
 		}
 
-		if r.Operation == "ref" {
+		if req.Operation == "ref" {
 			fmt.Println("Enter refund transaction ID:")
-			fmt.Scanln(&r.Transaction.refund)
+			fmt.Scanln(&req.Transaction.refund)
 		}
 
-		return r
+		return req
 	}
 
 	return Request{}
