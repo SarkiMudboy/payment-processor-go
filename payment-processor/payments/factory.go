@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -78,6 +79,7 @@ func NewAccount(user user, holder string, number string, bank string) *account {
 		Bank:   bank,
 	}
 
+	a.Balance = 10000000
 	a.Id = NewUUID()
 	return a
 }
@@ -111,10 +113,11 @@ func NewFile(filename, filetype string) (File, error) {
 		Type: filetype,
 	}
 
-	filepath := filename + "." + filetype
-
-	if _, err := os.Stat(filepath); os.IsNotExist(err) {
-		file, err := os.Create(filepath)
+	filename = filename + "." + filetype
+	filedir := filepath.Join(DB_ROOT, filepath.Base(filename))
+	// fmt.Println(filedir)
+	if _, err := os.Stat(filedir); os.IsNotExist(err) {
+		file, err := os.Create(filedir)
 		fmt.Println(file)
 
 		defer file.Close()
@@ -124,7 +127,7 @@ func NewFile(filename, filetype string) (File, error) {
 		}
 
 	} else {
-		file, err := os.Open(filepath)
+		file, err := os.Open(filename)
 		defer file.Close()
 
 		if err != nil {
@@ -132,6 +135,7 @@ func NewFile(filename, filetype string) (File, error) {
 		}
 	}
 
+	f.Dir = filedir
 	return f, nil
 }
 

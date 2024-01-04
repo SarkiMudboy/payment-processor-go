@@ -277,11 +277,13 @@ func (t *bankTransaction) issueReceipt() {
 type File struct {
 	Name string
 	Type string
+	Dir  string
 }
 
 func (f *File) Open() (*os.File, error) {
+	// fmt.Println(f)
 
-	file, err := os.OpenFile(f.Name+"."+f.Type, os.O_RDWR|os.O_CREATE, 0755)
+	file, err := os.OpenFile(f.Dir, os.O_RDWR|os.O_CREATE, 0755)
 
 	if err != nil {
 		return nil, fmt.Errorf("%s\n", err)

@@ -94,7 +94,7 @@ func (r Request) Build() Handler {
 }
 
 func (h Handler) Handle(r Request) error {
-
+	// fmt.Println(r.Transaction.amount)
 	switch r.Operation {
 	case "one-time":
 		h.processor.OneTimePayment(&h.transaction)
@@ -110,7 +110,7 @@ func (h Handler) Handle(r Request) error {
 		sub := payments.NewSubscription(h.transaction.User, data["name"], data["period"], plan)
 
 		h.processor.Subscription(&sub, &h.transaction)
-	case "refund":
+	case "ref":
 		refundID := r.Transaction.refund
 		refund := payments.InitTransaction(refundID)
 		entries, err := payments.Load(payments.TransactionFile)

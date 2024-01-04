@@ -27,6 +27,12 @@ var account = map[string]string{
 	"bank":   "First Bank",
 }
 
+var subscription = map[string]string{
+	"name":   "Spotify premium",
+	"period": "week",
+	"plan":   "900.00",
+}
+
 var proccessorOptions = `
 	Pay via?
 	 > card (1)
@@ -142,6 +148,10 @@ func GetRequest(p Process) Request {
 				subscription map[string]string
 				account      map[string]string
 			}{account: account}
+		}
+
+		if p.Operation() == "sub" {
+			data.subscription = subscription
 		}
 
 		req := Request{
