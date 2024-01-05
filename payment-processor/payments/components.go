@@ -215,9 +215,25 @@ func (a *account) Credit(amount float64) error {
 	return nil
 }
 
-func (a *account) transfer() {} //decide if to put in processor?
+func (a *account) Show(detail string) string {
 
-type bankTransaction struct {
+	if detail == "account" {
+		accDetails := `
+			Name: %s
+			Bank: %s
+			Number: %s
+			Balance: %f
+			Date: %v
+			`
+		return fmt.Sprintf(accDetails, a.Holder, a.Bank, a.Number, a.Balance, time.Now())
+	} else {
+		balanceDetail := "Your account balance for acc (%s) as at %v is %f"
+		return fmt.Sprintf(balanceDetail, a.Number, time.Now(), a.Balance)
+	}
+
+}
+
+type BankTransaction struct {
 	Id              string  `json:"id"`
 	Sender          user    `json:"sender"`
 	Reciepient      string  `json:"reciepient"` //user id string
@@ -226,17 +242,17 @@ type bankTransaction struct {
 	TransactionType string  `json:"type"`
 }
 
-func (b bankTransaction) Get() string {
+func (b BankTransaction) Get() string {
 	return b.Id
 }
 
-func (b bankTransaction) String() string {
+func (b BankTransaction) String() string {
 	return fmt.Sprintf("%s (%f)", b.Id, b.Amount)
 }
 
-func (t *bankTransaction) Load(b []byte) (bankTransaction, error) {
+func (t *BankTransaction) Load(b []byte) (BankTransaction, error) {
 
-	var db map[string]bankTransaction
+	var db map[string]BankTransaction
 
 	err := json.Unmarshal(b, &db)
 
@@ -253,7 +269,7 @@ func (t *bankTransaction) Load(b []byte) (bankTransaction, error) {
 	return transaction, nil
 }
 
-func (t *bankTransaction) issueReceipt() {
+func (t *BankTransaction) issueReceipt() {
 
 	date := time.Now().Format(time.RFC3339)
 

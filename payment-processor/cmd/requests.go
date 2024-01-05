@@ -27,6 +27,7 @@ type Request struct {
 type Handler struct {
 	processor   payments.Processor
 	transaction payments.Transaction
+	bank        payments.BankTransaction // write factory functions for bt
 }
 
 func (r Request) Build() Handler {
@@ -90,7 +91,7 @@ func (r Request) Build() Handler {
 		fmt.Println("Invalid operation!")
 	}
 
-	return Handler{proc, t}
+	return Handler{processor: proc, transaction: t}
 }
 
 func (h Handler) Handle(r Request) error {

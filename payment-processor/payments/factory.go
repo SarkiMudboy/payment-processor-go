@@ -17,6 +17,11 @@ func InitTransaction(id string) Transaction {
 func InitCard(id string) card {
 	return card{Id: id}
 }
+
+func InitAccount(id string) account {
+	return account{Id: id}
+}
+
 func InitSubscription(id string) subscription {
 	return subscription{id: id}
 }

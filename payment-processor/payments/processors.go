@@ -164,7 +164,6 @@ func (b *BankAccountProcessor) Subscription(s *subscription, t *Transaction) {
 	} else {
 		fmt.Println("(Fail) Transaction failed")
 	}
-
 	b.Invoice(t)
 }
 
@@ -209,6 +208,38 @@ func (b *BankAccountProcessor) Refund(r, t *Transaction) {
 
 func (b *BankAccountProcessor) Invoice(t *Transaction) {
 	issueInvoice(t, b.Label)
+}
+
+func (b *BankAccountProcessor) Send(t *BankTransaction) error {
+	reciepient_acc := InitAccount(t.Reciepient)
+
+	entries, err := Load(AccountFile)
+
+	if err != nil {
+		return err
+	}
+
+	reciepient_acc, err = reciepient_acc.Load(entries)
+
+	if err != nil {
+		return err
+	}
+
+	log.Printf("[Msg] Debitting $%f from %s....\n", t.Amount, b.Number)
+	err = b.Debit(t.Amount)
+
+	if err != nil {
+		return err
+	}
+
+	log.Printf("[Msg] Creditting $%f to %s....", t.Amount, reciepient_acc.Number)
+	err = reciepient_acc.Credit(t.Amount)
+
+	t.issueReceipt()
+
+	Save(&TransactionFile, t)
+
+	return err
 }
 
 // PayPal
